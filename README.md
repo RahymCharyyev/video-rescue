@@ -52,7 +52,7 @@ npm run dist:win     # .exe   → release/ (собирать на Windows)
 **Windows**: движок собирается в MSYS2 (терминал «MINGW64»):
 
 ```bash
-pacman -S --needed git make mingw-w64-x86_64-gcc mingw-w64-x86_64-nasm
+pacman -S --needed git make diffutils mingw-w64-x86_64-gcc mingw-w64-x86_64-nasm
 bash scripts/build-untrunc.sh
 ```
 

@@ -2,7 +2,7 @@
 # Build the patched untrunc engine for this machine and put it into resources/bin/<os>-<arch>/.
 #
 #   macOS:   needs Xcode Command Line Tools (xcode-select --install). nasm optional (brew install nasm).
-#   Windows: run from an MSYS2 "MINGW64" shell with: pacman -S --needed git make mingw-w64-x86_64-gcc mingw-w64-x86_64-nasm
+#   Windows: run from an MSYS2 "MINGW64" shell with: pacman -S --needed git make diffutils mingw-w64-x86_64-gcc mingw-w64-x86_64-nasm
 #   Linux:   build-essential git (nasm optional)
 #
 # Sources are pulled from GitHub only (ffmpeg.org is not needed).
@@ -71,10 +71,18 @@ fi
 [[ "$os" == mac ]] && mv -f "ffmpeg-$FF_VER/VERSION" "ffmpeg-$FF_VER/VERSION.bak" 2>/dev/null || true
 
 echo "==> building untrunc"
-extra_ld=""
-[[ "$os" == win ]] && extra_ld="-static"
-[[ "$os" == mac ]] && extra_ld="-liconv"
-LDFLAGS="$extra_ld" make -s FF_VER="$FF_VER" IS_RELEASE=1 -j"$jobs" > untrunc-build.log
+if [[ "$os" == win ]]; then
+  # MinGW has no libdl, and static ffmpeg needs a few Windows system libs after -lavutil:
+  # override the Makefile's link line completely.
+  ff="ffmpeg-$FF_VER"
+  win_ld="-L$ff/libavformat -lavformat -L$ff/libavcodec -lavcodec -L$ff/libavutil -lavutil"
+  win_ld+=" -static -lpthread -lbcrypt -lws2_32 -lole32 -luser32 -s"
+  make -s FF_VER="$FF_VER" IS_RELEASE=1 LDFLAGS="$win_ld" -j"$jobs" > untrunc-build.log
+else
+  extra_ld=""
+  [[ "$os" == mac ]] && extra_ld="-liconv"
+  LDFLAGS="$extra_ld" make -s FF_VER="$FF_VER" IS_RELEASE=1 -j"$jobs" > untrunc-build.log
+fi
 
 exe=untrunc
 [[ "$os" == win ]] && exe=untrunc.exe
