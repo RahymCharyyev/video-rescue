@@ -1,0 +1,87 @@
+{
+  "name": "video-rescue",
+  "productName": "Video Rescue",
+  "version": "1.0.0",
+  "description": "Восстановление оборванных видеозаписей (Sony RSV, MP4/MOV без индекса)",
+  "author": "Code Craft Tm",
+  "license": "GPL-2.0-or-later",
+  "main": "dist/main/main.js",
+  "scripts": {
+    "build:main": "tsc -p tsconfig.node.json",
+    "build:renderer": "vite build",
+    "build": "npm run build:main && npm run build:renderer",
+    "typecheck": "tsc -p tsconfig.node.json --noEmit && tsc -p tsconfig.web.json --noEmit",
+    "start": "npm run build && electron .",
+    "dev": "npm run build:main && concurrently -k \"vite\" \"wait-on tcp:5173 && cross-env VITE_DEV_SERVER_URL=http://localhost:5173 electron .\"",
+    "test": "npm run build:main && node test/e2e.mjs",
+    "untrunc": "bash scripts/build-untrunc.sh",
+    "dist:mac": "npm run build && electron-builder --mac",
+    "dist:win": "npm run build && electron-builder --win"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "@types/react": "^18.3.12",
+    "@types/react-dom": "^18.3.1",
+    "@vitejs/plugin-react": "^4.3.4",
+    "concurrently": "^9.1.0",
+    "cross-env": "^7.0.3",
+    "electron": "^33.2.1",
+    "electron-builder": "^25.1.8",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "typescript": "^5.7.2",
+    "vite": "^6.0.3",
+    "wait-on": "^8.0.1"
+  },
+  "build": {
+    "appId": "tm.codecraft.videorescue",
+    "productName": "Video Rescue",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "dist/**/*",
+      "package.json"
+    ],
+    "extraResources": [
+      {
+        "from": "resources/bin/${os}-${arch}",
+        "to": "bin",
+        "filter": [
+          "untrunc*"
+        ]
+      }
+    ],
+    "mac": {
+      "target": [
+        "dmg"
+      ],
+      "category": "public.app-category.video",
+      "icon": "build/icon.png",
+      "identity": null
+    },
+    "win": {
+      "target": [
+        "nsis",
+        "portable"
+      ],
+      "icon": "build/icon.png"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true
+    },
+    "artifactName": "${productName}-${version}-${os}-${arch}.${ext}",
+    "fileAssociations": [
+      {
+        "ext": [
+          "rsv",
+          "RSV"
+        ],
+        "name": "Sony RSV",
+        "role": "Editor"
+      }
+    ]
+  }
+}

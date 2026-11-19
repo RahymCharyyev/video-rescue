@@ -1,0 +1,6 @@
+node_modules/
+dist/
+release/
+.untrunc-build/
+resources/bin/*/untrunc
+resources/bin/*/untrunc.exe

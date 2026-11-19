@@ -1,0 +1,16 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "CommonJS",
+    "moduleResolution": "node",
+    "lib": ["ES2022"],
+    "types": ["node"],
+    "outDir": "dist",
+    "rootDir": "src",
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "sourceMap": false
+  },
+  "include": ["src/main/**/*.ts", "src/preload/**/*.ts", "src/engine/**/*.ts", "src/shared/**/*.ts"]
+}
