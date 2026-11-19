@@ -70,7 +70,8 @@
     },
     "nsis": {
       "oneClick": false,
-      "allowToChangeInstallationDirectory": true
+      "allowToChangeInstallationDirectory": true,
+      "artifactName": "${productName}-${version}-win-x64-setup.${ext}"
     },
     "artifactName": "${productName}-${version}-${os}-${arch}.${ext}",
     "fileAssociations": [
@@ -82,6 +83,9 @@
         "name": "Sony RSV",
         "role": "Editor"
       }
-    ]
+    ],
+    "portable": {
+      "artifactName": "${productName}-${version}-win-x64-portable.${ext}"
+    }
   }
 }

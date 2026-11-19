@@ -4,6 +4,12 @@ on:
   push:
     tags: ['v*']
   workflow_dispatch:
+    inputs:
+      platform:
+        description: Что собирать
+        type: choice
+        default: all
+        options: [all, mac-arm64, mac-x64, win-x64]
 
 jobs:
   test:
@@ -19,15 +25,24 @@ jobs:
       - run: npm run typecheck
       - run: npm test
 
+  plan:
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.m.outputs.matrix }}
+    steps:
+      - id: m
+        env:
+          PLATFORM: ${{ inputs.platform || 'all' }}
+        run: |
+          all='[{"runner":"macos-15","target":"--mac --arm64","name":"mac-arm64"},{"runner":"macos-15-intel","target":"--mac --x64","name":"mac-x64"},{"runner":"windows-latest","target":"--win --x64","name":"win-x64"}]'
+          if [ "$PLATFORM" = all ]; then m="$all"; else m=$(echo "$all" | jq -c --arg p "$PLATFORM" 'map(select(.name == $p))'); fi
+          echo "matrix={\"include\":$m}" >> "$GITHUB_OUTPUT"
+
   package:
-    needs: test
+    needs: [test, plan]
     strategy:
       fail-fast: false
-      matrix:
-        include:
-          - { runner: macos-15, target: --mac --arm64, name: mac-arm64 }
-          - { runner: macos-15-intel, target: --mac --x64, name: mac-x64 }
-          - { runner: windows-latest, target: --win --x64, name: win-x64 }
+      matrix: ${{ fromJSON(needs.plan.outputs.matrix) }}
     runs-on: ${{ matrix.runner }}
     steps:
       - uses: actions/checkout@v4
