@@ -40,7 +40,7 @@ if [[ ! -d untrunc/.git ]]; then
 fi
 git -C untrunc fetch -q --depth 1 origin "$UNTRUNC_COMMIT"
 git -C untrunc checkout -q -f FETCH_HEAD
-git -C untrunc apply "$root/patches/untrunc-moov-only.patch"
+git -C untrunc apply --ignore-whitespace "$root/patches/untrunc-moov-only.patch"
 
 cd untrunc
 if [[ ! -d "ffmpeg-$FF_VER" ]]; then
@@ -65,6 +65,9 @@ if [[ ! -f "ffmpeg-$FF_VER/libavcodec/libavcodec.a" ]]; then
   echo "==> building ffmpeg (a few minutes)"
   make -s -C "ffmpeg-$FF_VER" -j"$jobs" > ffmpeg-build.log
 fi
+# untrunc's Makefile treats ffmpeg as unbuilt (and re-runs configure) if config.asm is missing,
+# which configure doesn't create on every platform (e.g. macOS arm64)
+[[ -f "ffmpeg-$FF_VER/config.asm" ]] || touch "ffmpeg-$FF_VER/config.asm"
 [[ "$os" == mac ]] && mv -f "ffmpeg-$FF_VER/VERSION" "ffmpeg-$FF_VER/VERSION.bak" 2>/dev/null || true
 
 echo "==> building untrunc"
