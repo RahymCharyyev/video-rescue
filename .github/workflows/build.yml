@@ -2,7 +2,9 @@ name: build
 
 on:
   push:
-    tags: ['v*']
+    tags: ['v*', '[0-9]*']
+  release:
+    types: [published]
   workflow_dispatch:
     inputs:
       platform:
@@ -10,9 +12,22 @@ on:
         type: choice
         default: all
         options: [all, mac-arm64, mac-x64, win-x64]
+      release:
+        description: Тег релиза, к которому приложить установщики (пусто — не публиковать)
+        type: string
+        default: ''
+      reuse_runs:
+        description: Не собирать заново, а взять установщики из этих запусков (ID через запятую)
+        type: string
+        default: ''
+
+permissions:
+  contents: write
+  actions: read
 
 jobs:
   test:
+    if: ${{ !inputs.reuse_runs }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -26,6 +41,7 @@ jobs:
       - run: npm test
 
   plan:
+    if: ${{ !inputs.reuse_runs }}
     runs-on: ubuntu-latest
     outputs:
       matrix: ${{ steps.m.outputs.matrix }}
@@ -76,3 +92,25 @@ jobs:
             release/*.dmg
             release/*.exe
           if-no-files-found: error
+
+  publish:
+    needs: package
+    if: ${{ always() && (github.event_name == 'release' || github.ref_type == 'tag' || inputs.release) && (needs.package.result == 'success' || inputs.reuse_runs) }}
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+      TAG: ${{ github.event.release.tag_name || inputs.release || github.ref_name }}
+      REUSE: ${{ inputs.reuse_runs }}
+    steps:
+      - name: Collect installers
+        run: |
+          mkdir -p out
+          runs="${REUSE:-$GITHUB_RUN_ID}"
+          for r in ${runs//,/ }; do gh run download "$r" --dir "out/$r"; done
+          find out -type f \( -name '*.dmg' -o -name '*.exe' \) -exec mv {} . \;
+          ls -la *.dmg *.exe
+      - name: Upload to release
+        run: |
+          gh release view "$TAG" >/dev/null 2>&1 || gh release create "$TAG" --title "Video Rescue $TAG" --notes "Установщики для macOS (Apple Silicon, Intel) и Windows."
+          gh release upload "$TAG" ./*.dmg ./*.exe --clobber
